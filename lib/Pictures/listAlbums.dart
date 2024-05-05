@@ -55,7 +55,7 @@ class _ListAlbumsState extends State<ListAlbums> {
 
   List<Category> filterCategories() {
     String query = searchController.text.toLowerCase();
-    if(query.isEmpty)
+    if(query.isEmpty && selectedSortYear == -1)
       {
         return allCategories.where((cat) => cat.parentAlbumId == currentAlbum?.id).toList();
       }
@@ -508,22 +508,31 @@ class _ListAlbumsState extends State<ListAlbums> {
   void fetchAlbumPhotos(String albumId) async {
     const int pageNumber = 1;
     const int pageSize = 100;
-    final String fetchUrl =
-        'api/photos/album/$albumId?pageNumber=$pageNumber&pageSize=$pageSize';
+    final String fetchUrl = 'api/photos/album/$albumId?pageNumber=$pageNumber&pageSize=$pageSize';
 
-    albumPhotos = [];
     try {
-      final response = await ApiManager.get<dynamic>(fetchUrl, getHeaders());
-      if (response is Map<String, dynamic>) {
-        final List<dynamic> items = response['items'] ?? [];
-        setState(() {
-          albumPhotos = items.map((item) => Photo.fromJson(item)).toList();
+      final response = await ApiManager.get<Map<String, dynamic>>(fetchUrl, getHeaders());
+      if (response['items'] != null) {
+        List<Photo> photos = (response['items'] as List).map((item) => Photo.fromJson(item)).toList();
+
+        // Sort photos by the 'takenOn' field, from the most recent to the oldest
+        // Photos with a null 'takenOn' date are placed at the end of the list
+        photos.sort((a, b) {
+          if (a.takenOn == null && b.takenOn == null) return 0;
+          if (a.takenOn == null) return 1;
+          if (b.takenOn == null) return -1;
+          return b.takenOn!.compareTo(a.takenOn!);
         });
-      } else {
-        throw Exception("Unexpected response format");
+
+        setState(() {
+          albumPhotos = photos;
+        });
       }
     } catch (e) {
       print("Error fetching photos: $e");
+      setState(() {
+        albumPhotos = [];
+      });
     }
   }
 
@@ -669,6 +678,25 @@ class _ListAlbumsState extends State<ListAlbums> {
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: double.infinity,
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 10,
+                                right: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5), // Slightly transparent black
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.favorite, size: 16, color: Colors.red),
+                                      SizedBox(width: 4),
+                                      Text('${photo.likesCount}', style: const TextStyle(color: Colors.white)),
+                                    ],
+                                  ),
                                 ),
                               ),
                               if (editMode)

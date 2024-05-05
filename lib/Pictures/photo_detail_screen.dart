@@ -114,19 +114,28 @@ class _PhotoDetailScreenState extends State<PhotoDetailScreen> {
   }
 
   void _toggleEdit() {
-    setState(() async {
-      isEditing = !isEditing;
-      if (isEditing) {
-        // Request focus when entering editing mode
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _titleFocusNode.requestFocus();
-        });
-      } else {
-        // Optionally, update the photo title here
-        widget.photos[widget.currentIndex].updateTitle(_titleController.text);
-        await _updatePhoto(widget.photos[widget.currentIndex]);
-      }
-    });
+    if (isEditing) {
+      // If currently editing, update the title and perform the async update operation
+      widget.photos[widget.currentIndex].updateTitle(_titleController.text);
+      _updatePhoto(widget.photos[widget.currentIndex]).then((_) {
+        if (mounted) {
+          setState(() {
+            isEditing = false; // Ensure we toggle editing state after the update
+          });
+        }
+      }).catchError((error) {
+        print("Error updating photo: $error");
+      });
+    } else {
+      // If not currently editing, just enable editing mode
+      setState(() {
+        isEditing = true;
+      });
+      // Request focus after entering edit mode
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _titleFocusNode.requestFocus();
+      });
+    }
   }
 
   Future<void> _updatePhoto(Photo photo) async {
