@@ -661,9 +661,9 @@ class _ListAlbumsState extends State<ListAlbums> {
                           return Stack(
                             children: [
                               GestureDetector(
-                                onTap: () {
-                                  // Action when tapping on a photo
-                                  Navigator.push(
+                                onTap: () async {
+                                  // Wait for the PhotoDetailScreen to pop
+                                  await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => PhotoDetailScreen(
@@ -672,6 +672,8 @@ class _ListAlbumsState extends State<ListAlbums> {
                                       ),
                                     ),
                                   );
+                                  // After returning, refresh the data
+                                  fetchAlbums();  // This assumes fetchAlbums fetches and updates the data
                                 },
                                 child: Image.memory(
                                   base64Decode(photo.imageBase64),
