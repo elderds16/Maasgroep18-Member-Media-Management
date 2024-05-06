@@ -466,6 +466,11 @@ class _ListAlbumsState extends State<ListAlbums> {
 
   void onAlbumClicked(Category album) async {
     setState(() => isLoading = true);
+
+    searchController.clear();
+    selectedSortYear = -1;
+
+
     if (album.photoCount! > 0) {
       fetchAlbumPhotos(album.id);
     }
