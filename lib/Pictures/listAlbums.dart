@@ -448,6 +448,9 @@ class _ListAlbumsState extends State<ListAlbums> {
     } else {
       currentAlbum!.id = currentAlbum!.parentAlbumId!;
     }
+
+    searchController.clear();
+    selectedSortYear = -1;
     fetchAlbums();
 
     // Update the displayed title after the state is updated
