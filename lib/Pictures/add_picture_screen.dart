@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:exif/exif.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ms18_applicatie/Api/apiManager.dart'; // Assuming you have this path
@@ -55,17 +56,32 @@ class _AddPictureScreenState extends State<AddPictureScreen> {
     }
   }
 
+  DateTime? _extractDateTime(Map<String, IfdTag> exifData) {
+    if (exifData.containsKey('Image DateTime')) {
+      return DateTime.tryParse(exifData['Image DateTime']!.printable);
+    }
+    return null;
+  }
+
   void _uploadImages() async {
     if (_selectedImages == null) return;
     var uploadSuccessful = true;
 
     for (var image in _selectedImages!) {
+      File imageFile = File(image.path);
+      List<int> imageBytes = await imageFile.readAsBytes();
       String imageBase64 = await _imageToBase64(image.path);
+
+      // Extract metadata
+      final Map<String, IfdTag> data = await readExifFromBytes(imageBytes);
+      DateTime? dateTimeTaken = _extractDateTime(data);
+
 
       // Start with mandatory fields
       Map<String, dynamic> photoJson = {
         "ImageData": imageBase64,
         "ContentType": "image/jpeg",
+        "TakenOn": dateTimeTaken?.toIso8601String(), // Include taken date if available
       };
 
       // Conditionally add title if it is not empty
